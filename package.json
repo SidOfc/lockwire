@@ -1,0 +1,46 @@
+{
+    "name": "lockwire",
+    "version": "0.1.0",
+    "description": "A state management engine based on proxies",
+    "author": "Sidney Liebrand",
+    "licence": "MIT",
+    "type": "module",
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
+        "./*": {
+            "import": "./dist/*.mjs",
+            "require": "./dist/*.cjs"
+        }
+    },
+    "scripts": {
+        "test": "ava",
+        "test:watch": "nodemon -q -w test -w src -x 'clear && npm run test'",
+        "inspect": "node scripts/inspect.js",
+        "inspect:watch": "nodemon -q -w src -w scripts/inspect.js -x 'clear && npm run inspect'",
+        "build": "rollup -c"
+    },
+    "keywords": [
+        "state",
+        "management"
+    ],
+    "author": "Sidney Liebrand",
+    "license": "MIT",
+    "prettier": {
+        "tabWidth": 4,
+        "singleQuote": true,
+        "printWidth": 80,
+        "bracketSpacing": false
+    },
+    "devDependencies": {
+        "ava": "^4.0.1",
+        "nodemon": "^2.0.15",
+        "prettier": "^2.5.1",
+        "rollup": "^2.68.0"
+    }
+}
