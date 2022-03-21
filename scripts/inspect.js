@@ -1,4 +1,4 @@
-import {lockwire} from '../src/index.js';
+import {lockwire, relay} from '../src/index.js';
 
 const api = lockwire({
     users: [
@@ -7,17 +7,13 @@ const api = lockwire({
         {id: 3, name: 'Sam', hobbies: [{id: 3, name: 'Writing'}]},
         {id: 4, name: 'Kim', hobbies: [{id: 4, name: 'Chess'}]},
     ],
+    sortedUsers: relay({users: ['users']}, ({users}) =>
+        [...users].sort((a, b) =>
+            b.name > a.name ? -1 : b.name < a.name ? 1 : 0
+        )
+    ),
 });
 
-api.on('update', console.log, []);
+api.on('update', console.log);
 
-api.state.users.findBy({id: 3}).name = 'Kor';
-api.state.users.findBy({id: 2}).hobbies.push({id: 5, name: 'Fletching'});
-api.state.users.findBy({id: 2}).hobbies.findBy({name: 'Fletching'}).name =
-    'Crafting';
-
-api.state.settings = {};
-
-Object.assign(api.state.settings, {admin: true, active: true});
-
-console.log(api.state.users);
+api.state.sortedUsers.findBy({id: 1}).name = 'Zorro';
