@@ -96,6 +96,9 @@ function proxy(value, extensions = {}, api = {}, cursor = [], register) {
 
 function getter(extensions, api, cursor, register) {
     return (target, key, targetProxy) => {
+        if (typeof extensions[key] === 'function')
+            return extensions[key].bind({target, targetProxy, cursor});
+
         if (target[key]?.isLockwireRelayInitializer)
             target[key] = target[key](
                 extensions,
@@ -105,9 +108,6 @@ function getter(extensions, api, cursor, register) {
             );
 
         if (target[key]?.isLockwireRelayGetter) return target[key]();
-
-        if (typeof extensions[key] === 'function')
-            return extensions[key].bind({target, targetProxy, cursor});
 
         if (typeof target[key] === 'function')
             return target[key].bind(targetProxy);
@@ -127,6 +127,14 @@ function getter(extensions, api, cursor, register) {
 
 function setter(extensions, api, cursor, register) {
     return (target, key, value, targetProxy) => {
+        if (isRelay(target[key]))
+            throw new Error('lockwire::relay is read-only.');
+
+        if (isRelay(value))
+            throw new Error(
+                'lockwire::relay may only be set during initialization.'
+            );
+
         const previous = target[key];
         target[key] = value;
 
@@ -142,6 +150,10 @@ function setter(extensions, api, cursor, register) {
 
         return true;
     };
+}
+
+function isRelay(value) {
+    return value?.isLockwireRelayInitializer || value?.isLockwireRelayGetter;
 }
 
 function noop() {}
