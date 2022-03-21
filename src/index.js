@@ -18,7 +18,7 @@ export function lockwire(data) {
     api.off = (event, callback) => {
         if (events[event]) {
             events[event] = events[event].filter(
-                ({callback}) => other !== callback
+                ({other}) => other !== callback
             );
         }
     };
@@ -115,7 +115,7 @@ function getter(api, cursor) {
 }
 
 function setter(api, cursor) {
-    return (target, key, value, targetProxy) => {
+    return (target, key, value) => {
         if (isRelay(target[key]))
             throw new Error('lockwire::relay is read-only.');
 

@@ -21,15 +21,19 @@
     "scripts": {
         "test": "ava",
         "test:watch": "nodemon -q -w test -w src -x 'clear && npm run test'",
+        "lint": "eslint -c .eslintrc.cjs --no-eslintrc src",
+        "lint:watch": "nodemon -q -w src -x 'clear && npm run lint'",
+        "build": "rollup -c",
+        "build:watch": "nodemon -q -w src -x 'clear && npm run build'",
         "inspect": "node scripts/inspect.js",
         "inspect:watch": "nodemon -q -w src -w scripts/inspect.js -x 'clear && npm run inspect'",
-        "build": "rollup -c"
+        "prepare": "npm run build"
     },
     "keywords": [
         "state",
-        "management"
+        "management",
+        "proxy"
     ],
-    "author": "Sidney Liebrand",
     "license": "MIT",
     "prettier": {
         "tabWidth": 4,
@@ -39,6 +43,7 @@
     },
     "devDependencies": {
         "ava": "^4.0.1",
+        "eslint": "^8.11.0",
         "nodemon": "^2.0.15",
         "prettier": "^2.5.1",
         "rollup": "^2.68.0"
