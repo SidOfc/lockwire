@@ -22,23 +22,23 @@ export function lockwire(data) {
             );
         }
     };
-    api.extend = (newExtensions) => {
-        Object.assign(extensions, newExtensions);
-    };
 
-    api.state = proxy(data, extensions, api, [], (payload) => {
+    api.register = (payload) => {
         events[payload.event]?.forEach(({cursor, callback}) => {
             if (cursor.every((node, idx) => node === payload.cursor[idx]))
                 callback(payload);
         });
-    });
+    };
+
+    api.extensions = extensions;
+    api.state = proxy(data, api, []);
 
     return api;
 }
 
 export function relay(cursors, callback) {
     const cache = {};
-    const relayInitializer = (extensions, api, relayCursor, register) => {
+    const relayInitializer = (api, relayCursor) => {
         const relayGetter = () => {
             if (cache.value) return cache.value;
 
@@ -58,14 +58,14 @@ export function relay(cursors, callback) {
 
             return (cache.value =
                 value === Object(value)
-                    ? proxy(value, extensions, api, relayCursor, noop)
+                    ? proxy(value, {...api, register: noop}, relayCursor)
                     : value);
         };
 
         const relayUpdater = () => {
             delete cache.value;
 
-            register({
+            api.register({
                 type: 'relay',
                 event: 'update',
                 cursor: relayCursor,
@@ -87,45 +87,34 @@ export function relay(cursors, callback) {
     return relayInitializer;
 }
 
-function proxy(value, extensions = {}, api = {}, cursor = [], register) {
+function proxy(value, api = {}, cursor = []) {
     return new Proxy(value, {
-        get: getter(extensions, api, cursor, register),
-        set: setter(extensions, api, cursor, register),
+        get: getter(api, cursor),
+        set: setter(api, cursor),
     });
 }
 
-function getter(extensions, api, cursor, register) {
+function getter(api, cursor) {
     return (target, key, targetProxy) => {
-        if (typeof extensions[key] === 'function')
-            return extensions[key].bind({target, targetProxy, cursor});
+        if (typeof api.extensions[key] === 'function')
+            return api.extensions[key].bind({target, targetProxy, cursor});
 
-        if (target[key]?.isLockwireRelayInitializer)
-            target[key] = target[key](
-                extensions,
-                api,
-                [...cursor, key],
-                register
-            );
+        if (isRelayInitializer(target[key]))
+            target[key] = target[key](api, [...cursor, key]);
 
-        if (target[key]?.isLockwireRelayGetter) return target[key]();
+        if (isRelayGetter(target[key])) return target[key]();
 
         if (typeof target[key] === 'function')
             return target[key].bind(targetProxy);
 
         if (target[key] === Object(target[key]))
-            return proxy(
-                target[key],
-                extensions,
-                api,
-                [...cursor, key],
-                register
-            );
+            return proxy(target[key], api, [...cursor, key]);
 
         return target[key];
     };
 }
 
-function setter(extensions, api, cursor, register) {
+function setter(api, cursor) {
     return (target, key, value, targetProxy) => {
         if (isRelay(target[key]))
             throw new Error('lockwire::relay is read-only.');
@@ -139,7 +128,7 @@ function setter(extensions, api, cursor, register) {
         target[key] = value;
 
         if (!(key === 'length' && Array.isArray(target))) {
-            register({
+            api.register({
                 type: 'regular',
                 event: 'update',
                 cursor: [...cursor, key],
@@ -153,7 +142,15 @@ function setter(extensions, api, cursor, register) {
 }
 
 function isRelay(value) {
-    return value?.isLockwireRelayInitializer || value?.isLockwireRelayGetter;
+    return isRelayInitializer(value) || isRelayGetter(value);
+}
+
+function isRelayInitializer(value) {
+    return value?.isLockwireRelayInitializer;
+}
+
+function isRelayGetter(value) {
+    return value?.isLockwireRelayGetter;
 }
 
 function noop() {}
