@@ -17,3 +17,4 @@ const api = lockwire({
 api.on('update', console.log);
 
 api.state.sortedUsers.findBy({id: 1}).name = 'Zorro';
+api.state.sortedUsers.findBy({name: 'Zorro'}).name = 'Larry';

@@ -7,6 +7,11 @@ export function lockwire(data) {
 
     api.on = (event, callback, cursor = []) => {
         events[event] ||= [];
+        events[event].unshift({cursor: cursor.map(String), callback});
+    };
+
+    api.after = (event, callback, cursor = []) => {
+        events[event] ||= [];
         events[event].push({cursor: cursor.map(String), callback});
     };
 
@@ -58,22 +63,18 @@ export function relay(cursors, callback) {
         };
 
         const relayUpdater = () => {
-            clearTimeout(cache.timeoutId);
+            delete cache.value;
 
-            cache.timeoutId = setTimeout(() => {
-                delete cache.value;
-
-                register({
-                    type: 'relay',
-                    event: 'update',
-                    cursor: relayCursor,
-                    current: relayGetter(),
-                });
+            register({
+                type: 'relay',
+                event: 'update',
+                cursor: relayCursor,
+                current: relayGetter(),
             });
         };
 
         Object.values(cursors).forEach((cursor) =>
-            api.on('update', relayUpdater, cursor)
+            api.after('update', relayUpdater, cursor)
         );
 
         relayGetter.isLockwireRelayGetter = true;
